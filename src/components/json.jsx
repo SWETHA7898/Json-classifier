@@ -8,7 +8,7 @@ export default function Json({ onJsonParsed }) {
       const json = JSON.parse(input);
       onJsonParsed(json);
     } catch {
-      alert("⚠️ Invalid JSON format. Please check your input.");
+      alert("Invalid JSON format. Please check your input.");
     }
   };
 
