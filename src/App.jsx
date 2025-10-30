@@ -150,12 +150,15 @@ export default function App() {
     ) {
       rootKey = Object.keys(inputData)[0];
       rootData = inputData[rootKey];
+      console.log(rootKey)
+     console.log(rootData)
     }
 
     processNode(rootData, rootKey, null, 0, 0, 1, "", true);
     setNodes(generatedNodes);
     setEdges(generatedEdges);
   }, [inputData]);
+  
 
   return (
     <div className="min-h-screen bg-slate-50 p-6 flex flex-col">
