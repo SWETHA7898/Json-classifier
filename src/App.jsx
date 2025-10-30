@@ -157,22 +157,31 @@ export default function App() {
   }, [inputData]);
 
   return (
-    <div className="p-4 h-screen">
-      <h1 className="text-2xl font-bold mb-4 text-center text-blue-800">
-        JSON Tree Visualizer
-      </h1>
-      <div className="flex flex-col">
-         <Json onJsonParsed={handleJsonParsed} />
+    <div className="min-h-screen bg-slate-50 p-6 flex flex-col">
+      <header className="text-center mb-6">
+        <h1 className="text-3xl font-extrabold text-blue-700 drop-shadow-sm">
+          JSON Tree Visualizer
+        </h1>
+        <p className="text-slate-600 mt-2">
+          Paste your JSON below to visualize and search its structure
+        </p>
+      </header>
 
-      <div style={{ width: "100%", height: "65vh", background: "#f5f5f5" }}>
-        <Search nodes={nodes} setNodes={setNodes} />
-        <ReactFlow nodes={nodes} edges={edges}>
-          
-        </ReactFlow>
-      </div>
+      <div className="flex gap-6 flex-wrap">
+        <div className="flex-1 min-w-[300px]">
+          <Json onJsonParsed={handleJsonParsed} />
+        </div>
 
+        <div className="flex-[2] bg-white p-3 rounded-xl shadow-md border border-slate-200">
+          <Search nodes={nodes} setNodes={setNodes} />
+          <div className="h-[65vh] mt-2 rounded-lg border border-slate-200 bg-slate-100">
+            <ReactFlow nodes={nodes} edges={edges}>
+              <Background color="#ddd" />
+             
+            </ReactFlow>
+          </div>
+        </div>
       </div>
-     
     </div>
   );
 }
