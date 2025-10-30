@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import ReactFlow, { Background, Controls } from "reactflow";
 import "reactflow/dist/style.css";
-import Json from "./components/Json";
+import Json from "./components/json";
 import Search from "./components/search";
 
 export default function App() {
