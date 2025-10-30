@@ -13,8 +13,8 @@ export default function App() {
     setInputData(json);
   };
 
- 
-  
+
+
   useEffect(() => {
     if (!inputData) return;
 
@@ -82,21 +82,21 @@ export default function App() {
           data === null
             ? "null"
             : typeof data === "string"
-            ? `"${data}"`
-            : String(data);
+              ? `"${data}"`
+              : String(data);
         label = `${key}: ${valueStr}`;
       }
 
       const nodeStyle = getNodeStyle(type);
 
       generatedNodes.push({
-  id,
-  position: { x, y },
-  data: { label, path: currentPath },
-  type: "default",
-  style: nodeStyle,
-  originalStyle: nodeStyle, 
-});
+        id,
+        position: { x, y },
+        data: { label, path: currentPath },
+        type: "default",
+        style: nodeStyle,
+        originalStyle: nodeStyle,
+      });
 
 
       if (parentId !== null) {
@@ -105,8 +105,9 @@ export default function App() {
           source: parentId,
           target: id,
           type: "smoothstep",
-          animated: false,
-          style: { stroke: "#94a3b8", strokeWidth: 2 },
+
+
+
         });
       }
 
@@ -177,7 +178,7 @@ export default function App() {
           <div className="h-[65vh] mt-2 rounded-lg border border-slate-200 bg-slate-100">
             <ReactFlow nodes={nodes} edges={edges}>
               <Background color="#ddd" />
-             
+
             </ReactFlow>
           </div>
         </div>
