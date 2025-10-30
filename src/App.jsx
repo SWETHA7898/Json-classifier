@@ -1,152 +1,178 @@
-// App.js
-import React, { useState, useCallback } from "react";
-import ReactFlow, { Background, Controls, ReactFlowProvider, MarkerType } from "reactflow";
+import React, { useState, useEffect } from "react";
+import ReactFlow, { Background, Controls } from "reactflow";
 import "reactflow/dist/style.css";
-import Json from "./components/json";
-import dagre from "dagre";
+import Json from "./components/Json";
+import Search from "./components/search";
 
-// Custom node components with enhanced styling
-const ObjectNode = ({ data }) => (
-  <div className="px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-semibold shadow-md border border-blue-700">
-    {data.label}
-  </div>
-);
-
-const ArrayNode = ({ data }) => (
-  <div className="px-4 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold shadow-md border border-green-700">
-    {data.label}
-  </div>
-);
-
-const ValueNode = ({ data }) => (
-  <div className="px-4 py-2 rounded-lg bg-gray-200 text-gray-800 text-sm shadow-md border border-gray-300">
-    {data.label}
-  </div>
-);
-
-const nodeTypes = {
-  object: ObjectNode,
-  array: ArrayNode,
-  value: ValueNode
-};
-
-// Layouting function using dagre
-const getLayoutedElements = (nodes, edges) => {
-  const dagreGraph = new dagre.graphlib.Graph();
-  dagreGraph.setDefaultEdgeLabel(() => ({}));
-  dagreGraph.setGraph({ rankdir: "LR", ranksep: 100, nodesep: 50 }); // Adjust ranksep for more space
-
-  nodes.forEach((node) => dagreGraph.setNode(node.id, { width: 200, height: 40 }));
-  edges.forEach((edge) => dagreGraph.setEdge(edge.source, edge.target));
-
-  dagre.layout(dagreGraph);
-
-  return {
-    nodes: nodes.map((node) => {
-      const { x, y } = dagreGraph.node(node.id);
-      return { ...node, position: { x: x - 100, y: y - 20 } }; // Center nodes
-    }),
-    edges,
-  };
-};
-
-/**
- * Converts a JSON object to a React Flow node and edge tree.
- * @param {object} json The input JSON object.
- * @returns {{nodes: Array, edges: Array}} The converted nodes and edges.
- */
-function jsonToNodes(json) {
-  const nodes = [];
-  const edges = [];
-  let idCounter = 0;
-
-  function makeNode(label, type) {
-    const id = `node-${idCounter++}`;
-    nodes.push({ id, data: { label }, type, position: { x: 0, y: 0 } });
-    return id;
-  }
-
-  function traverse(key, value, parentId) {
-    let nodeId;
-    const isRoot = key === null;
-
-    if (Array.isArray(value)) {
-      nodeId = makeNode(isRoot ? "Array" : `${key} []`, "array");
-      if (parentId) {
-        edges.push({
-          id: `${parentId}-${nodeId}`,
-          source: parentId,
-          target: nodeId,
-          type: "smoothstep",
-          markerEnd: { type: MarkerType.ArrowClosed },
-        });
-      }
-
-      value.forEach((item, index) => {
-        traverse(index, item, nodeId);
-      });
-    } else if (typeof value === "object" && value !== null) {
-      nodeId = makeNode(isRoot ? "Object" : `${key} {}`, "object");
-      if (parentId) {
-        edges.push({
-          id: `${parentId}-${nodeId}`,
-          source: parentId,
-          target: nodeId,
-          type: "smoothstep",
-          markerEnd: { type: MarkerType.ArrowClosed },
-        });
-      }
-
-      Object.entries(value).forEach(([childKey, childValue]) => {
-        traverse(childKey, childValue, nodeId);
-      });
-    } else {
-      const label = `${key !== null ? `${key}: ` : ""}${JSON.stringify(value)}`;
-      nodeId = makeNode(label, "value");
-      if (parentId) {
-        edges.push({
-          id: `${parentId}-${nodeId}`,
-          source: parentId,
-          target: nodeId,
-          type: "smoothstep",
-          markerEnd: { type: MarkerType.ArrowClosed },
-        });
-      }
-    }
-  }
-
-  traverse(null, json, null);
-
-  return { nodes, edges };
-}
-
-function App() {
+export default function App() {
+  const [inputData, setInputData] = useState(null);
   const [nodes, setNodes] = useState([]);
   const [edges, setEdges] = useState([]);
 
-  const handleJsonParsed = useCallback((json) => {
-    const { nodes: initialNodes, edges: initialEdges } = jsonToNodes(json);
-    const layouted = getLayoutedElements(initialNodes, initialEdges);
-    setNodes(layouted.nodes);
-    setEdges(layouted.edges);
-  }, []);
+  const handleJsonParsed = (json) => {
+    setInputData(json);
+  };
+
+ 
+  
+  useEffect(() => {
+    if (!inputData) return;
+
+    const generatedNodes = [];
+    const generatedEdges = [];
+    let nodeId = 0;
+    const levelWidth = 350;
+    const levelHeight = 120;
+
+    const getNodeType = (value) => {
+      if (value === null) return "primitive";
+      if (Array.isArray(value)) return "array";
+      if (typeof value === "object") return "object";
+      return "primitive";
+    };
+
+    const getNodeStyle = (type) => ({
+      object: {
+        backgroundColor: "#8b5cf6",
+        color: "white",
+        padding: "12px 16px",
+        borderRadius: 8,
+        border: "2px solid #6d28d9",
+        minWidth: 150,
+      },
+      array: {
+        backgroundColor: "#10b981",
+        color: "white",
+        padding: "12px 16px",
+        borderRadius: 8,
+        border: "2px solid #059669",
+        minWidth: 150,
+      },
+      primitive: {
+        backgroundColor: "#f59e0b",
+        color: "white",
+        padding: "12px 16px",
+        borderRadius: 8,
+        border: "2px solid #d97706",
+        minWidth: 150,
+      },
+    }[type]);
+
+    function processNode(
+      data,
+      key,
+      parentId,
+      level,
+      indexInLevel,
+      siblingsCount,
+      path = "",
+      isRoot = false
+    ) {
+      const currentPath = path ? `${path}.${key || "root"}` : key || "root";
+      const id = `node-${nodeId++}`;
+      const type = getNodeType(data);
+      const x = (indexInLevel - (siblingsCount - 1) / 2) * levelWidth + 500;
+      const y = level * levelHeight + 50;
+
+      let label = "";
+      if (type === "object" || type === "array") {
+        label = key || (isRoot ? "Root" : "");
+      } else {
+        const valueStr =
+          data === null
+            ? "null"
+            : typeof data === "string"
+            ? `"${data}"`
+            : String(data);
+        label = `${key}: ${valueStr}`;
+      }
+
+      const nodeStyle = getNodeStyle(type);
+
+      generatedNodes.push({
+  id,
+  position: { x, y },
+  data: { label, path: currentPath },
+  type: "default",
+  style: nodeStyle,
+  originalStyle: nodeStyle, 
+});
+
+
+      if (parentId !== null) {
+        generatedEdges.push({
+          id: `${parentId}-${id}`,
+          source: parentId,
+          target: id,
+          type: "smoothstep",
+          animated: false,
+          style: { stroke: "#94a3b8", strokeWidth: 2 },
+        });
+      }
+
+      if (type === "object" && data !== null) {
+        const keys = Object.keys(data);
+        keys.forEach((childKey, index) =>
+          processNode(
+            data[childKey],
+            childKey,
+            id,
+            level + 1,
+            index,
+            keys.length,
+            currentPath
+          )
+        );
+      } else if (type === "array") {
+        data.forEach((item, index) =>
+          processNode(
+            item,
+            String(index),
+            id,
+            level + 1,
+            index,
+            data.length,
+            currentPath
+          )
+        );
+      }
+    }
+
+    let rootData = inputData;
+    let rootKey = null;
+
+    if (
+      inputData &&
+      typeof inputData === "object" &&
+      !Array.isArray(inputData) &&
+      Object.keys(inputData).length === 1
+    ) {
+      rootKey = Object.keys(inputData)[0];
+      rootData = inputData[rootKey];
+    }
+
+    processNode(rootData, rootKey, null, 0, 0, 1, "", true);
+    setNodes(generatedNodes);
+    setEdges(generatedEdges);
+  }, [inputData]);
 
   return (
     <div className="p-4 h-screen">
       <h1 className="text-2xl font-bold mb-4 text-center text-blue-800">
         JSON Tree Visualizer
       </h1>
-      <Json onJsonParsed={handleJsonParsed} />
+      <div className="flex flex-col">
+         <Json onJsonParsed={handleJsonParsed} />
+
       <div style={{ width: "100%", height: "65vh", background: "#f5f5f5" }}>
-        <ReactFlowProvider>
-          <ReactFlow nodes={nodes} edges={edges} nodeTypes={nodeTypes} fitView>
-            <Background />
-            <Controls />
-          </ReactFlow>
-        </ReactFlowProvider>
+        <Search nodes={nodes} setNodes={setNodes} />
+        <ReactFlow nodes={nodes} edges={edges}>
+          
+        </ReactFlow>
       </div>
+
+      </div>
+     
     </div>
   );
 }
-
-export default App;
